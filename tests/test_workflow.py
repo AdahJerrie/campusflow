@@ -3,6 +3,7 @@ import unittest
 
 from campusflow.workflow import (
     assign_ticket,
+    get_work_queue,
     reopen_ticket,
     update_ticket_status,
 )
@@ -129,6 +130,67 @@ class TestTicketWorkflow(unittest.TestCase):
             update_ticket_status(self.tickets, "T999", "in_progress")
 
 
+def make_ticket(ticket_id, priority, status="open", assigned_to=None):
+    return {
+        "id": ticket_id,
+        "title": f"Ticket {ticket_id}",
+        "category": "Network",
+        "urgency": "high",
+        "affected_users": 1,
+        "priority": priority,
+        "status": status,
+        "assigned_to": assigned_to,
+    }
+
+
+class TestWorkQueue(unittest.TestCase):
+
+    def test_queue_sorts_by_priority_then_numeric_id(self):
+        tickets = [
+            make_ticket("T010", "critical"),
+            make_ticket("T002", "low"),
+            make_ticket("T005", "high"),
+            make_ticket("T001", "critical"),
+            make_ticket("T007", "medium"),
+        ]
+
+        queue = get_work_queue(tickets)
+        queue_ids = [ticket["id"] for ticket in queue]
+
+        self.assertEqual(queue_ids, ["T001", "T010", "T005", "T007", "T002"])
+
+    def test_queue_excludes_in_progress_and_resolved_tickets(self):
+        tickets = [
+            make_ticket("T001", "low", status="open"),
+            make_ticket("T002", "critical", status="in_progress", assigned_to="Ada"),
+            make_ticket("T003", "high", status="resolved", assigned_to="Ada"),
+        ]
+
+        queue = get_work_queue(tickets)
+        queue_ids = [ticket["id"] for ticket in queue]
+
+        self.assertEqual(queue_ids, ["T001"])
+
+    def test_queue_does_not_change_original_list_order(self):
+        tickets = [
+            make_ticket("T002", "low"),
+            make_ticket("T001", "critical"),
+        ]
+
+        get_work_queue(tickets)
+
+        original_ids = [ticket["id"] for ticket in tickets]
+        self.assertEqual(original_ids, ["T002", "T001"])
+
+    def test_empty_queue_when_no_open_tickets(self):
+        tickets = [
+            make_ticket("T001", "critical", status="resolved", assigned_to="Ada"),
+        ]
+
+        self.assertEqual(get_work_queue(tickets), [])
+
+
 if __name__ == "__main__":
     unittest.main()
+
 
