@@ -1,5 +1,6 @@
 
 import json
+import os
 
 
 def save_tickets(tickets, path):
@@ -7,6 +8,8 @@ def save_tickets(tickets, path):
         "schema_version": 1,
         "tickets": tickets
     }
+
+    os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
 
     with open(path, "w", encoding="utf-8") as file:
         json.dump(data, file, indent=4)
