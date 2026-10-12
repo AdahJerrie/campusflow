@@ -4,4 +4,4 @@ __pycache__/
 *.py[cod]
 
 # Local runtime and test data
-data/
+
