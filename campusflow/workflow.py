@@ -5,6 +5,13 @@ ALLOWED_STATUS_TRANSITIONS = {
     "resolved": set(),
 }
 
+PRIORITY_ORDER = {
+    "critical": 0,
+    "high": 1,
+    "medium": 2,
+    "low": 3,
+}
+
 
 def _find_ticket(tickets, ticket_id):
     for ticket in tickets:
@@ -59,3 +66,24 @@ def reopen_ticket(tickets, ticket_id):
 
     ticket["status"] = "open"
     return ticket
+
+
+def _ticket_id_number(ticket_id):
+    if isinstance(ticket_id, str) and ticket_id.startswith("T") and ticket_id[1:].isdigit():
+        return int(ticket_id[1:])
+
+    raise ValueError(f"Invalid ticket ID: '{ticket_id}'.")
+
+
+def get_work_queue(tickets):
+    open_tickets = [
+        ticket for ticket in tickets if ticket["status"] == "open"
+    ]
+
+    return sorted(
+        open_tickets,
+        key=lambda ticket: (
+            PRIORITY_ORDER[ticket["priority"]],
+            _ticket_id_number(ticket["id"]),
+        ),
+    )
