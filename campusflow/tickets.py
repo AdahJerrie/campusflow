@@ -5,19 +5,10 @@ from campusflow.validation import (
     validate_category,
     validate_urgency,
     validate_affected_users,
+    calculate_priority,
 )
 
-def calculate_priority(urgency, affected_users):
-    if urgency == "high" and affected_users >= 10:
-        return "critical"
-
-    if urgency == "high" or affected_users >= 10:
-        return "high"
-
-    if urgency == "medium" or affected_users >= 3:
-        return "medium"
-
-    return "low"
+        
 
 
 def create_ticket(tickets, title, category, urgency, affected_users):
@@ -38,6 +29,7 @@ def create_ticket(tickets, title, category, urgency, affected_users):
         "priority": priority,
         "status": "open",
         "assigned_to": None,
+        "notes": [],
     }
 
     return ticket
