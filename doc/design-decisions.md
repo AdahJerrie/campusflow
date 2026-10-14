@@ -43,3 +43,27 @@ saved files and reports invalid data instead of silently accepting it.
 The unittest framework is used because it is included with Python.
 Tests cover successful operations, validation failures, workflow rules,
 persistence errors, queue ordering, and empty reports.
+
+
+## 8. Error convention
+Every business-layer function raises ValueError on rejection and mutates nothing on failure.
+The CLI catches ValueError and OSError and prints a friendly message.
+
+## 9. Validate before mutate
+add_note validates author, message, ticket ID and ticket status, then computes the note ID,
+then appends. The append is the only mutation, so a rejected note cannot consume an ID.
+
+## 10. Note IDs
+Per ticket, N001, N002...; the next ID is highest existing number + 1 (not len + 1),
+so reloaded or gapped data never collides.
+
+## 11. Leaf validation module
+validation.py imports nothing from campusflow. storage.py needs the validators and
+tickets.py imports storage, so a shared leaf module avoids a circular import.
+
+## 12. Load and save safety
+load_tickets validates the whole decoded collection into a new list (keys, canonical
+category/urgency, priority consistency, statuses, assignment rule, note shapes, duplicate
+ticket and note IDs) and returns it only if every record passes. reload_into replaces
+memory only after that. save_tickets validates, writes a temp file in the same directory,
+then os.replace, so a failed save leaves the old file intact.
