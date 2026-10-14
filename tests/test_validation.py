@@ -1,5 +1,7 @@
 import copy
 import unittest
+from campusflow.validation import validate_ticket_id, validate_staff_name
+
 
 from campusflow.tickets import (
     validate_affected_users,
@@ -51,6 +53,23 @@ class TestValidation(unittest.TestCase):
         with self.assertRaises(ValueError):
             create_ticket(tickets, "Title", "Network", "high", True)
         self.assertEqual(tickets, before)
+
+        from campusflow.validation import validate_ticket_id, validate_staff_name
+
+class TestNewValidators(unittest.TestCase):
+    def test_ticket_id_normalised_and_bad_values_rejected(self):
+        self.assertEqual(validate_ticket_id(" t001 "), "T001")
+        for bad in ("", "T", "X001", "T0O1", "T²", 5, None):
+            with self.subTest(value=bad):
+                with self.assertRaises(ValueError):
+                    validate_ticket_id(bad)
+
+    def test_staff_name_trimmed_and_blank_rejected(self):
+        self.assertEqual(validate_staff_name("  Ada "), "Ada")
+        for bad in ("", "   ", None, 5):
+            with self.subTest(value=bad):
+                with self.assertRaises(ValueError):
+                    validate_staff_name(bad)
 
 
 if __name__ == "__main__":
