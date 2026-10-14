@@ -27,16 +27,18 @@ def find_ticket_or_raise(tickets, ticket_id):
 
 
 def show_menu():
-    print("\n===== CampusFlow Helpdesk =====")
-    print("1. Create ticket")
-    print("2. List tickets")
-    print("3. View ticket details")
-    print("4. Assign ticket")
-    print("5. Update ticket status")
-    print("6. Reopen resolved ticket")
-    print("7. View unresolved queue")
-    print("8. View report")
-    print("0. Exit")
+    print(f"""
+\n===== CampusFlow Helpdesk =====")
+ 1. Create ticket
+2. List tickets
+3. View ticket details
+4. Assign ticket")
+5. Update ticket status
+6. Reopen resolved ticket
+7. View unresolved queue
+8. View report
+0. Exit
+\n""")
 
 
 def create_new_ticket(tickets):
