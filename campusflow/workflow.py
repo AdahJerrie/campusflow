@@ -33,6 +33,10 @@ def assign_ticket(tickets, ticket_id, staff_name):
 
 
 def update_ticket_status(tickets, ticket_id, new_status):
+    
+    if not isinstance(new_status, str):
+        raise ValueError("Status must be text.")
+    
     ticket = _find_ticket(tickets, ticket_id)
     _reject_if_resolved(ticket)
 
