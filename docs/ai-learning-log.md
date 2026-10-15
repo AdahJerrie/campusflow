@@ -1,6 +1,6 @@
 # AI Learning Log — CampusFlow
 
-**Role:** Engineer A  
+**Role:** Engineer A
 **Focus:** Ticket workflow safety, note validation, and JSON storage.
 
 ## Learning Cycle 1 — Ticket Workflow Safety and Notes
