@@ -1,6 +1,7 @@
 
 import unittest
 import os
+import json
 
 from campusflow.storage import (
     save_tickets,
@@ -12,6 +13,7 @@ from campusflow.storage import (
 class TestStorage(unittest.TestCase):
 
     def setUp(self):
+        os.makedirs("data", exist_ok=True)
         self.path = "data/test_unittest_tickets.json"
 
         self.tickets = [
@@ -23,7 +25,8 @@ class TestStorage(unittest.TestCase):
                 "affected_users": 12,
                 "priority": "critical",
                 "status": "open",
-                "assigned_to": None
+                "assigned_to": None,
+                "notes": [],
             }
         ]
 
@@ -33,26 +36,125 @@ class TestStorage(unittest.TestCase):
 
     def test_save_and_load_tickets(self):
         save_tickets(self.tickets, self.path)
-
         loaded_tickets = load_tickets(self.path)
-
         self.assertEqual(loaded_tickets, self.tickets)
+
+    def test_load_rejects_duplicate_ticket_ids(self):
+        ticket_one = self.tickets[0].copy()
+        ticket_two = self.tickets[0].copy()
+
+        ticket_one["id"] = "T001"
+        ticket_two["id"] = "T001"
+
+        with open(self.path, "w", encoding="utf-8") as file:
+            json.dump(
+                {
+                    "schema_version": 1,
+                    "tickets": [ticket_one, ticket_two],
+                },
+                file,
+            )
+
+        with self.assertRaisesRegex(ValueError, "Duplicate ticket ID"):
+            load_tickets(self.path)
+
+    def test_load_rejects_invalid_ticket_id(self):
+        invalid_ticket = {**self.tickets[0], "id": "BAD-ID"}
+
+        with open(self.path, "w", encoding="utf-8") as file:
+            json.dump(
+                {"schema_version": 1, "tickets": [invalid_ticket]},
+                file,
+            )
+
+        with self.assertRaisesRegex(ValueError, "valid ticket ID"):
+            load_tickets(self.path)
+
+    def test_load_rejects_invalid_urgency(self):
+        invalid_ticket = self.tickets[0].copy()
+        invalid_ticket["urgency"] = "extreme"
+
+        with open(self.path, "w", encoding="utf-8") as file:
+            json.dump(
+                {"schema_version": 1, "tickets": [invalid_ticket]},
+                file,
+            )
+
+        with self.assertRaisesRegex(ValueError, "urgency"):
+            load_tickets(self.path)
+
+    def test_load_rejects_incorrect_priority(self):
+        invalid_ticket = self.tickets[0].copy()
+        invalid_ticket["priority"] = "low"
+
+        with open(self.path, "w", encoding="utf-8") as file:
+            json.dump(
+                {"schema_version": 1, "tickets": [invalid_ticket]},
+                file,
+            )
+
+        with self.assertRaisesRegex(ValueError, "Priority"):
+            load_tickets(self.path)
+
+    def test_load_rejects_invalid_status(self):
+        invalid_ticket = self.tickets[0].copy()
+        invalid_ticket["status"] = "pending"
+
+        with open(self.path, "w", encoding="utf-8") as file:
+            json.dump(
+                {"schema_version": 1, "tickets": [invalid_ticket]},
+                file,
+            )
+
+        with self.assertRaisesRegex(ValueError, "status"):
+            load_tickets(self.path)
+
+    def test_load_rejects_invalid_category(self):
+        invalid_ticket = {**self.tickets[0], "category": "Food"}
+
+        with open(self.path, "w", encoding="utf-8") as file:
+            json.dump(
+                {"schema_version": 1, "tickets": [invalid_ticket]},
+                file,
+            )
+
+        with self.assertRaisesRegex(ValueError, "category"):
+            load_tickets(self.path)
+
+    def test_load_rejects_unhashable_category(self):
+        invalid_ticket = {
+            **self.tickets[0],
+            "category": ["Network"],
+        }
+
+        with open(self.path, "w", encoding="utf-8") as file:
+            json.dump(
+                {"schema_version": 1, "tickets": [invalid_ticket]},
+                file,
+            )
+
+        with self.assertRaisesRegex(ValueError, "category"):
+            load_tickets(self.path)
 
     def test_load_rejects_non_dictionary_ticket(self):
         with open(self.path, "w", encoding="utf-8") as file:
-            file.write(
-                '{"schema_version": 1, "tickets": ["not a valid ticket"]}'
+            json.dump(
+                {
+                    "schema_version": 1,
+                    "tickets": ["not a valid ticket"],
+                },
+                file,
             )
 
-        with self.assertRaises(ValueError):
+        with self.assertRaisesRegex(ValueError, "dictionary"):
             load_tickets(self.path)
 
     def test_load_missing_file_returns_empty_list(self):
-        loaded_tickets = load_tickets(
-            "data/file_that_does_not_exist.json"
-        )
+        missing_path = "data/file_that_does_not_exist.json"
+        if os.path.exists(missing_path):
+            os.remove(missing_path)
 
-        self.assertEqual(loaded_tickets, [])
+        self.assertEqual(load_tickets(missing_path), [])
 
     def test_load_rejects_malformed_json(self):
         with open(self.path, "w", encoding="utf-8") as file:
@@ -63,7 +165,22 @@ class TestStorage(unittest.TestCase):
 
     def test_load_rejects_unsupported_schema_version(self):
         with open(self.path, "w", encoding="utf-8") as file:
-            file.write('{"schema_version": 2, "tickets": []}')
+            json.dump(
+                {"schema_version": 2, "tickets": []},
+                file,
+            )
+
+        with self.assertRaisesRegex(
+            ValueError, "unsupported or missing schema version"
+        ):
+            load_tickets(self.path)
+
+    def test_load_rejects_boolean_schema_version(self):
+        with open(self.path, "w", encoding="utf-8") as file:
+            json.dump(
+                {"schema_version": True, "tickets": []},
+                file,
+            )
 
         with self.assertRaisesRegex(
             ValueError, "unsupported or missing schema version"
@@ -72,19 +189,19 @@ class TestStorage(unittest.TestCase):
 
     def test_load_rejects_non_list_tickets(self):
         with open(self.path, "w", encoding="utf-8") as file:
-            file.write(
-                '{"schema_version": 1, "tickets": "not a list"}'
+            json.dump(
+                {
+                    "schema_version": 1,
+                    "tickets": "not a list",
+                },
+                file,
             )
 
-        with self.assertRaisesRegex(
-            ValueError, "expected 'tickets' to be a list"
-        ):
+        with self.assertRaisesRegex(ValueError, "list"):
             load_tickets(self.path)
 
     def test_generate_first_ticket_id(self):
-        ticket_id = generate_ticket_id([])
-
-        self.assertEqual(ticket_id, "T001")
+        self.assertEqual(generate_ticket_id([]), "T001")
 
     def test_generate_next_ticket_id(self):
         tickets = [
@@ -93,26 +210,15 @@ class TestStorage(unittest.TestCase):
             {"id": "T003"},
         ]
 
-        ticket_id = generate_ticket_id(tickets)
-
-        self.assertEqual(ticket_id, "T006")
+        self.assertEqual(generate_ticket_id(tickets), "T006")
 
     def test_ticket_ids_remain_unique_after_save_and_reload(self):
-        # Save the existing ticket to the JSON file.
         save_tickets(self.tickets, self.path)
-
-        # Load the saved tickets, simulating a program restart.
         loaded_tickets = load_tickets(self.path)
 
-        # Generate the next ID from the loaded tickets.
         next_id = generate_ticket_id(loaded_tickets)
+        existing_ids = [ticket["id"] for ticket in loaded_tickets]
 
-        # Collect the IDs that already exist.
-        existing_ids = [
-            ticket["id"] for ticket in loaded_tickets
-        ]
-
-        # Confirm the new ID is not a duplicate.
         self.assertNotIn(next_id, existing_ids)
         self.assertEqual(next_id, "T002")
 
