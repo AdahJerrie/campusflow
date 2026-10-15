@@ -1,4 +1,4 @@
-from campusflow.validation import validate_staff_name
+from campusflow.validation import validate_staff_name, validate_ticket_id
 
 
 ALLOWED_STATUS_TRANSITIONS = {
@@ -9,6 +9,9 @@ ALLOWED_STATUS_TRANSITIONS = {
 
 
 def _find_ticket(tickets, ticket_id):
+    # Same normalisation as notes.py: 't001' and ' T001 ' mean T001.
+    ticket_id = validate_ticket_id(ticket_id)
+
     for ticket in tickets:
         if ticket["id"] == ticket_id:
             return ticket
