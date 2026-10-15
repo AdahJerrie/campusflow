@@ -28,9 +28,11 @@ ticket must be reopened before further status changes.
 
 ## 5. Queue ordering
 
-Resolved tickets are excluded from the active queue. Remaining tickets
-are ordered by priority (critical, high, medium, low), then by numeric
-ticket ID for predictable ordering when priorities match.
+The original Open Work Queue shows OPEN tickets only. in_progress and
+resolved tickets are excluded. Tickets are ordered by priority (critical,
+high, medium, low), then by NUMERIC ticket ID, so T2 comes before T10.
+"Unresolved" (open + in_progress) is a reporting measure, not the queue.
+sort_by_priority is shared with the optional "sort search results" view.
 
 ## 6. JSON persistence
 
@@ -67,3 +69,20 @@ category/urgency, priority consistency, statuses, assignment rule, note shapes, 
 ticket and note IDs) and returns it only if every record passes. reload_into replaces
 memory only after that. save_tickets validates, writes a temp file in the same directory,
 then os.replace, so a failed save leaves the old file intact.
+
+
+## 13. Search
+search_tickets is a pure function in search.py: it validates every filter first, then
+returns deep copies of the tickets that match ALL supplied filters (AND). A blank filter
+means "do not filter". Titles are compared with casefold(). Results come back in the
+original ticket order; priority sorting is a separate, optional step.
+
+## 14. Reports
+Every ticket is counted once, by its current status, priority and category.
+unresolved = open + in_progress. resolution_percent = resolved / total * 100, and an
+empty collection returns 0.0 instead of dividing by zero.
+
+## 15. Testable CLI
+Prompt screens live in menus.py and take input_fn and output_fn, resolved when the screen
+runs, so tests pass scripted answers (or patch builtins.input) instead of typing.
+Questions live in question_bank.py; scoring lives in understanding_check.py.

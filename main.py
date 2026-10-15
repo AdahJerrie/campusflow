@@ -9,9 +9,16 @@ from campusflow.workflow import (
 from campusflow.storage import load_tickets, save_tickets
 from campusflow.queue import display_queue
 from campusflow.reports import display_report
+from campusflow.menus import (
+    add_note_menu,
+    view_notes_menu,
+    search_menu,
+    understanding_check_menu,
+)
 
 
 DATA_FILE = Path("data/tickets.json")
+NOTES_FILE = Path("understanding_notes.txt")
 
 
 def save_data(tickets):
@@ -34,8 +41,12 @@ def show_menu():
     print("4. Assign ticket")
     print("5. Update ticket status")
     print("6. Reopen resolved ticket")
-    print("7. View unresolved queue")
+    print("7. View open work queue")
     print("8. View report")
+    print("9. Add follow-up note")
+    print("10. View ticket notes")
+    print("11. Search tickets")
+    print("12. Engineering Understanding Check")
     print("0. Exit")
 
 
@@ -63,7 +74,10 @@ def view_ticket(tickets):
     ticket = find_ticket_or_raise(tickets, ticket_id)
 
     for key, value in ticket.items():
-        print(f"{key.replace('_', ' ').title()}: {value}")
+        if key == "notes":
+            print(f"Notes: {len(value)} (use option 10 to read them)")
+        else:
+            print(f"{key.replace('_', ' ').title()}: {value}")
 
 
 def assign_existing_ticket(tickets):
@@ -104,9 +118,10 @@ def main():
 
     while True:
         show_menu()
-        choice = input("Choose an option: ").strip()
 
         try:
+            choice = input("Choose an option: ").strip()
+
             if choice == "1":
                 create_new_ticket(tickets)
             elif choice == "2":
@@ -123,11 +138,23 @@ def main():
                 display_queue(tickets)
             elif choice == "8":
                 display_report(tickets)
+            elif choice == "9":
+                add_note_menu(tickets, save_data)
+            elif choice == "10":
+                view_notes_menu(tickets)
+            elif choice == "11":
+                search_menu(tickets)
+            elif choice == "12":
+                understanding_check_menu(NOTES_FILE)
             elif choice == "0":
                 print("Goodbye!")
                 break
             else:
-                print("Invalid choice. Enter a number from 0 to 8.")
+                print("Invalid choice. Enter a number from 0 to 12.")
+        except (KeyboardInterrupt, EOFError):
+            # Ctrl-C or Ctrl-D: leave cleanly instead of a traceback.
+            print("\nGoodbye!")
+            break
         except (ValueError, OSError) as error:
             print(f"Error: {error}")
 
