@@ -28,6 +28,21 @@ class TestQueue(unittest.TestCase):
     def test_empty_queue(self):
         self.assertEqual(get_queue([]), [])
 
+    def test_original_queue_shows_only_open_tickets(self):
+        tickets = self.tickets + [
+            {"id": "T006", "priority": "critical", "status": "in_progress"},
+        ]
+        result = get_queue(tickets)
+        self.assertNotIn("T006", [ticket["id"] for ticket in result])
+        self.assertTrue(all(ticket["status"] == "open" for ticket in result))
+
+    def test_queue_breaks_ties_by_numeric_id_not_text(self):
+        tickets = [
+            {"id": "T10", "priority": "high", "status": "open"},
+            {"id": "T2", "priority": "high", "status": "open"},
+        ]
+        self.assertEqual([t["id"] for t in get_queue(tickets)], ["T2", "T10"])
+
 
 class TestReports(unittest.TestCase):
     def test_report_counts_status_and_priority(self):
@@ -50,7 +65,15 @@ class TestReports(unittest.TestCase):
     def test_empty_report(self):
         self.assertEqual(
             generate_report([]),
-            {"total": 0, "by_status": {}, "by_priority": {}},
+            {
+                "total": 0,
+                "by_status": {},
+                "by_priority": {},
+                "by_category": {},
+                "unresolved": 0,
+                "resolved": 0,
+                "resolution_percent": 0.0,
+            },
         )
 
 
