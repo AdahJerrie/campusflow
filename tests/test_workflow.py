@@ -1,5 +1,6 @@
 
 import unittest
+import copy
 
 from campusflow.workflow import (
     add_note,
@@ -7,6 +8,50 @@ from campusflow.workflow import (
     reopen_ticket,
     update_ticket_status,
 )
+
+
+def _make_ticket(ticket_id, status="open", assigned_to=None):
+    return {
+        "id": ticket_id, "title": "Sample", "category": "Network",
+        "urgency": "low", "affected_users": 1, "priority": "low",
+        "status": status, "assigned_to": assigned_to,
+    }
+
+
+class TestStatusSafety(unittest.TestCase):
+    def setUp(self):
+        self.tickets = [
+            _make_ticket("T001"),                                
+            _make_ticket("T002", "resolved", assigned_to="Sam"),   
+        ]
+        self.before = copy.deepcopy(self.tickets)
+
+    def test_unassigned_open_to_in_progress_rejected_and_unchanged(self):
+        with self.assertRaises(ValueError):
+            update_ticket_status(self.tickets, "T001", "in_progress")
+        self.assertEqual(self.tickets, self.before)
+
+    def test_assign_resolved_ticket_rejected_and_unchanged(self):
+        with self.assertRaises(ValueError):
+            assign_ticket(self.tickets, "T002", "Alex")
+        self.assertEqual(self.tickets, self.before)
+
+    def test_reopen_open_ticket_rejected_and_unchanged(self):
+        with self.assertRaises(ValueError):
+            reopen_ticket(self.tickets, "T001")
+        self.assertEqual(self.tickets, self.before)
+
+    def test_unknown_ticket_id_leaves_collection_unchanged(self):
+        with self.assertRaises(ValueError):
+            update_ticket_status(self.tickets, "T999", "in_progress")
+        self.assertEqual(self.tickets, self.before)
+
+    def test_non_string_status_rejected_with_value_error(self):
+        for bad in (["in_progress"], {"a": 1}, None, 5):
+            with self.subTest(status=bad):
+                with self.assertRaises(ValueError):
+                    update_ticket_status(self.tickets, "T001", bad)
+                self.assertEqual(self.tickets, self.before)
 
 
 class TestAssignTicket(unittest.TestCase):

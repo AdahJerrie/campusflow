@@ -1,17 +1,20 @@
-# CampusFlow
+# CampusFlow Helpdesk
 
-CampusFlow is a Python command-line helpdesk application for managing support tickets. It supports ticket creation, priority calculation, assignment, status changes, an open-work queue, reporting, JSON storage, and automated tests.
+CampusFlow is a Python command-line helpdesk application for creating, tracking, assigning, and resolving IT support tickets.
 
 ## Features
 
 - Create and manage support tickets.
-- Calculate ticket priority from urgency and the number of affected users.
+- Validate ticket titles, categories, urgency, and affected users.
+- Calculate ticket priority automatically.
+- List tickets and look up ticket details.
 - Assign tickets to staff members.
 - Manage ticket status transitions and reopen resolved tickets.
 - Add notes to open and in-progress tickets.
-- Generate an open-work queue and ticket reports.
-- Save tickets to JSON and load them when the application starts.
-- Validate ticket data and reject invalid operations safely.
+- Display an unresolved-work queue ordered by priority and ticket ID.
+- Generate reports grouped by status and priority.
+- Save tickets to JSON and reload them when the application starts.
+- Reject invalid operations safely without changing ticket data.
 - Run automated tests using Python's standard library.
 
 ## Ticket Validation and Workflow Safety
@@ -38,7 +41,7 @@ Each note contains:
 - `author`: the staff member who added the note.
 - `message`: the note content.
 
-Note IDs are unique within each ticket. Authors must not be blank, and messages must contain between 5 and 300 characters after trimming surrounding whitespace.
+Note IDs must be unique within each ticket. Authors must not be blank, and messages must contain between 5 and 300 characters after trimming surrounding whitespace.
 
 Notes can be added only to open or in-progress tickets. Existing notes are preserved when a ticket is resolved and later reopened.
 
@@ -48,8 +51,8 @@ Tickets are stored in JSON using a versioned structure:
 
 ```json
 {
-    "schema_version": 1,
-    "tickets": []
+  "schema_version": 1,
+  "tickets": []
 }
 ```
 
@@ -63,21 +66,52 @@ Storage validation checks required ticket fields, unique ticket IDs, valid categ
 - Ticket data is validated before it is saved.
 - Ticket IDs are generated using the highest existing numeric ID to avoid collisions after reloading saved tickets.
 
-## Running the Tests
+## Requirements
 
-Run the following command from the project root:
+- Python 3.10 or later.
+- Python standard library only; no external packages are required.
+
+## Run the Application
+
+From the project root, run:
+
+```bash
+python3 -m campusflow.main
+```
+
+Follow the numbered menu to use the application. Ticket data is stored locally in `data/tickets.json`.
+
+## Run the Tests
+
+Run the complete test suite from the project root:
 
 ```bash
 python3 -m unittest discover -s tests -v
 ```
 
-The tests cover JSON storage, ticket ID generation, invalid data, assignments, status transitions, reopening, and note validation.
+The tests cover ticket creation, validation, priority calculation, assignment, workflow rules, reopening, notes, JSON persistence, ticket ID generation, queue ordering, and reporting.
 
-## Requirements
+## Project Structure
 
-- Python 3.12 or a compatible Python 3 version.
-- Python standard library; no external packages are required for the current storage and test functionality.
+```text
+campusflow/
+    main.py
+    tickets.py
+    workflow.py
+    queue.py
+    reports.py
+    storage.py
+tests/
+    test_tickets.py
+    test_workflow.py
+    test_storage.py
+    test_queue_reports.py
+data/
+README.md
+```
 
 ## Team Development
 
-CampusFlow is developed collaboratively. Changes are made on feature branches, tested before submission, and submitted through pull requests for review before merging into the main branch.
+CampusFlow is developed collaboratively. Changes are made on feature branches, tested before submission, and submitted through pull requests for review before being merged into the main branch.
+
+The `data/` directory is excluded from Git so local runtime data is not accidentally committed.
