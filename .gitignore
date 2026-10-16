@@ -15,6 +15,5 @@ htmlcov/
 .DS_Store
 Thumbs.db
 
-
 # Local runtime and test data
-/data/*.json
+data/
